@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+</head>
+<body>
+
+<h2>Login Admin</h2>
+
+<input id="email" type="email" placeholder="Email admin"><br><br>
+<input id="password" type="password" placeholder="Password"><br><br>
+
+<button onclick="loginAdmin()">Login</button>
+
+<p id="msg"></p>
+
+<script>
+async function loginAdmin() {
+    let email = document.getElementById("email").value;
+    let pass  = document.getElementById("password").value;
+
+    // Login Supabase
+    const { data, error } = await db.auth.signInWithPassword({
+        email: email,
+        password: pass
+    });
+
+    if (error) {
+        document.getElementById("msg").innerText = error.message;
+        return;
+    }
+
+    // Ambil user ID
+    const userId = data.user.id;
+
+    // Cek role admin di tabel profiles
+    const { data: profile, error: profileErr } = await db
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+    if (profileErr) {
+        document.getElementById("msg").innerText = "Gagal cek role admin!";
+        return;
+    }
+
+    if (profile.role !== "admin") {
+        document.getElementById("msg").innerText = "Anda bukan admin!";
+        return;
+    }
+
+    // Simpan ke localStorage
+    localStorage.setItem("admin_id", userId);
+
+    // Redirect
+    window.location.href = "dashboard-admin.html";
+}
+</script>
+
+</body>
+</html>

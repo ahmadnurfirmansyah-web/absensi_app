@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Riwayat Absensi</title>
+
+  <!-- 1) Muat SDK supabase terlebih dulu -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2) Muat file config yang sudah Anda buat (harus define `db`) -->
+  <script src="js/supabase.js"></script>
+
+  <style>
+    body { font-family: system-ui, Arial; padding:1rem; max-width:720px; margin:auto; }
+    .riwayat-item { border-bottom:1px solid #eee; padding:0.6rem 0; }
+  </style>
+</head>
+<body>
+  <h2>Riwayat Absensi Saya</h2>
+  <div id="history">Memuat...</div>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", loadHistory);
+
+  async function loadHistory() {
+    // Pastikan `db` sudah tersedia dari js/supabase.js
+    if (typeof db === 'undefined') {
+      document.getElementById("history").innerText = "Error: Supabase client tidak ditemukan.";
+      console.error("Supabase client (db) is undefined. Pastikan js/supabase.js dimuat dan mendefinisikan `db`.");
+      return;
+    }
+
+    // Ambil user saat ini dari session Supabase (lebih andal daripada localStorage)
+    const { data: userData, error: userErr } = await db.auth.getUser();
+    if (userErr) {
+      document.getElementById("history").innerText = "Gagal mendapatkan user: " + userErr.message;
+      console.error(userErr);
+      return;
+    }
+    const user = userData?.user;
+    if (!user || !user.id) {
+      document.getElementById("history").innerText = "Anda belum login. Silakan login terlebih dahulu.";
+      return;
+    }
+    const userId = user.id;
+
+    // Query ke tabel yang benar (perhatikan nama kolom: jam_masuk / jam_pulang)
+    const { data, error } = await db
+      .from("absensi")
+      .select("*")
+      .eq("user_id", userId)
+      .order("jam_masuk", { ascending: false });
+
+    if (error) {
+      document.getElementById("history").innerText = "Gagal load data: " + error.message;
+      console.error(error);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      document.getElementById("history").innerText = "Belum ada riwayat absen.";
+      return;
+    }
+
+    // Bangun HTML sederhana (tanpa menampilkan foto, hanya teks)
+    let html = "";
+    data.forEach(item => {
+      const tanggal = item.jam_masuk
+        ? new Date(item.jam_masuk).toLocaleDateString("id-ID", { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+        : new Date(item.created_at).toLocaleDateString('id-ID');
+
+      const jamMasuk = item.jam_masuk ? new Date(item.jam_masuk).toLocaleTimeString('id-ID') : "-";
+      const jamPulang = item.jam_pulang ? new Date(item.jam_pulang).toLocaleTimeString('id-ID') : "-";
+
+      html += `
+        <div class="riwayat-item">
+          <strong>${tanggal}</strong><br>
+          Masuk: ${ item.foto_masuk ? `Foto berhasil dikirim (${jamMasuk})` : "Belum absen masuk" }<br>
+          Pulang: ${ item.foto_pulang ? `Foto berhasil dikirim (${jamPulang})` : "Belum absen pulang" }
+        </div>
+      `;
+    });
+
+    document.getElementById("history").innerHTML = html;
+  }
+  </script>
+</body>
+</html>

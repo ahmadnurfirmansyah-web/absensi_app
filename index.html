@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+</head>
+<body>
+
+<h2>Login</h2>
+
+<input id="email" type="email" placeholder="Email"><br><br>
+<input id="password" type="password" placeholder="Password"><br><br>
+
+<button onclick="login()">Login</button>
+
+<p id="msg"></p>
+
+<script>
+async function login() {
+    let email = document.getElementById("email").value;
+    let pass  = document.getElementById("password").value;
+
+    const { data, error } = await db.auth.signInWithPassword({
+        email: email,
+        password: pass
+    });
+
+    if (error) {
+        document.getElementById("msg").innerHTML = error.message;
+    } else {
+        window.location.href = "absen.html";
+    }
+}
+</script>
+
+</body>
+</html>

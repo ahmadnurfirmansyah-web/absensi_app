@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+</head>
+<body>
+
+<h2>Register Akun</h2>
+
+<input id="fullName" type="text" placeholder="Nama Lengkap"><br><br>
+<input id="email" type="email" placeholder="Email"><br><br>
+<input id="password" type="password" placeholder="Password"><br><br>
+
+<button onclick="register()">Daftar</button>
+
+<p id="msg"></p>
+
+<script>
+async function register() {
+    let fullName = document.getElementById("fullName").value;
+    let email    = document.getElementById("email").value;
+    let pass     = document.getElementById("password").value;
+
+    // 1. Buat akun di Supabase Auth
+    const { data, error } = await db.auth.signUp({
+        email: email,
+        password: pass
+    });
+
+    if (error) {
+        document.getElementById("msg").innerText = "Error: " + error.message;
+        return;
+    }
+
+    const user = data.user;
+
+    // 2. Simpan profil ke tabel "profiles"
+    let { error: errProfile } = await db.from("profiles").insert({
+        id: user.id,
+        full_name: fullName,
+        role: "user"
+    });
+
+    if (errProfile) {
+        document.getElementById("msg").innerText = "Gagal menyimpan profil: " + errProfile.message;
+        return;
+    }
+
+    document.getElementById("msg").innerText = "Registrasi berhasil! Silakan login.";
+}
+</script>
+
+</body>
+</html>

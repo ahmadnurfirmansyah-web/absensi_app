@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Absen Magang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+
+  <h2>Absensi Magang</h2>
+
+  <button id="logoutBtn">Logout</button>
+
+  <hr>
+
+  <h3>Absen Masuk</h3>
+  <input type="file" accept="image/*" capture="camera" id="fotoMasuk">
+  <button id="btnMasuk">Kirim Absen Masuk</button>
+
+  <hr>
+
+  <h3>Absen Pulang</h3>
+  <input type="file" accept="image/*" capture="camera" id="fotoPulang">
+  <button id="btnPulang">Kirim Absen Pulang</button>
+
+  <a href="history.html">Lihat Riwayat</a>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/absen.js"></script>
+</body>
+</html>

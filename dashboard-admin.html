@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 18px; }
+    .card { margin-bottom: 14px; border:1px solid #ddd; padding:10px; border-radius:6px; max-width:520px; }
+    .thumb { width:150px; height:100px; object-fit:cover; border-radius:6px; background:#f3f3f3; display:block; margin-top:6px; }
+    .row { display:flex; gap:12px; align-items:flex-start; }
+    .meta { flex:1; }
+    .debug { font-size:12px; color:#666; margin-top:6px; }
+    .error { color:#c00; font-weight:600; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+</head>
+<body>
+  <h2>Dashboard Admin</h2>
+  <button onclick="logout()">Logout</button>
+  <hr>
+  <h3>Data Absensi Peserta</h3>
+  <div id="list">Loading...</div>
+
+<script>
+/*
+  Final dashboard that:
+  - Tries multiple URL patterns to find photo
+  - Performs client-side join between absensi and profiles
+  - Logs attempts to console for debugging
+*/
+
+const PROJECT_REF = "hgivxyqggvsexblarzut";
+const BUCKET = "absensi-foto";
+const STORAGE_ORIGIN = `https://${PROJECT_REF}.supabase.co/storage/v1/object/public/${BUCKET}/`;
+
+document.addEventListener("DOMContentLoaded", loadAbsensi);
+
+async function loadAbsensi() {
+  try {
+    const adminId = localStorage.getItem("admin_id");
+    if (!adminId) {
+      window.location.href = "admin-login.html";
+      return;
+    }
+
+    // 1) get absensi
+    const { data: absensi, error: errA } = await db
+      .from("absensi")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (errA) throw errA;
+
+    // 2) get profiles (id, full_name)
+    const { data: profiles, error: errP } = await db
+      .from("profiles")
+      .select("id, full_name");
+
+    if (errP) throw errP;
+
+    const profileMap = {};
+    (profiles || []).forEach(p => profileMap[p.id] = p.full_name);
+
+    // Render list
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    for (const r of (absensi || [])) {
+      const nome = profileMap[r.user_id] || r.user_id || "(tidak ada user_id)";
+      const jamMasuk = r.jam_masuk ? new Date(r.jam_masuk).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "-";
+      const jamPulang = r.jam_pulang ? new Date(r.jam_pulang).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "-";
+
+      // Decide function to resolve URL by trying patterns
+      const fotoMasukCandidate = await findWorkingImageUrl(r.foto_masuk, r.user_id);
+      const fotoPulangCandidate = await findWorkingImageUrl(r.foto_pulang, r.user_id);
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="row">
+          <div class="meta">
+            <strong>Nama Peserta:</strong> ${escapeHtml(nome)}<br>
+            <strong>Masuk:</strong> ${escapeHtml(jamMasuk)}<br>
+            ${fotoMasukCandidate ? `<img class="thumb" src="${fotoMasukCandidate}" alt="foto masuk">` : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:#999">No photo</div>`}
+            <br>
+            <strong>Pulang:</strong> ${escapeHtml(jamPulang)}<br>
+            ${fotoPulangCandidate ? `<img class="thumb" src="${fotoPulangCandidate}" alt="foto pulang">` : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:#999">No photo</div>`}
+            <div class="debug">id: ${r.id} • user_id: ${r.user_id} • foto_masuk="${r.foto_masuk || ''}" • foto_pulang="${r.foto_pulang || ''}"</div>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+    }
+
+    if ((absensi||[]).length === 0) list.innerHTML = "<i>Tidak ada data absensi</i>";
+
+  } catch (e) {
+    console.error("Load error:", e);
+    document.getElementById("list").innerHTML = `<div class="error">Gagal load data! lihat console (F12)</div>`;
+  }
+}
+
+// Utility: escape html
+function escapeHtml(s) {
+  return (s===null || s===undefined) ? "" : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+}
+
+// Try multiple candidate URLs and return first that loads (or null)
+async function findWorkingImageUrl(dbValue, userId) {
+  if (!dbValue) return null;
+
+  // Normalize: trim whitespace
+  dbValue = String(dbValue).trim();
+
+  const candidates = [];
+
+  // if value already full absolute URL -> use as-is first
+  if (dbValue.startsWith("http://") || dbValue.startsWith("https://")) {
+    candidates.push(dbValue);
+  }
+
+  // if value contains the storage public prefix already (duplicated case) -> try stripping prefix
+  const storagePrefix = STORAGE_ORIGIN;
+  if (dbValue.startsWith(storagePrefix)) {
+    const stripped = dbValue.slice(storagePrefix.length);
+    candidates.push(storagePrefix + stripped); // original-ish
+    // and try stripped only (path)
+    candidates.push(storagePrefix + stripped);
+  }
+
+  // Candidate: direct path stored in DB as is
+  candidates.push(STORAGE_ORIGIN + dbValue);
+
+  // Candidate: userId/dbValue (if it wasn't already)
+  if (userId && !dbValue.startsWith(userId + '/')) {
+    candidates.push(STORAGE_ORIGIN + userId + '/' + dbValue);
+  }
+
+  // Candidate: try stripping any leading / if present
+  if (dbValue.startsWith('/')) {
+    candidates.push(STORAGE_ORIGIN + dbValue.slice(1));
+  }
+
+  // Candidate: sometimes DB contains double-prefix; try removing everything up to last slash (filename only)
+  const lastSlashIndex = dbValue.lastIndexOf('/');
+  if (lastSlashIndex !== -1) {
+    const lastPart = dbValue.slice(lastSlashIndex + 1);
+    candidates.push(STORAGE_ORIGIN + lastPart);           // root/file
+    if (userId) candidates.push(STORAGE_ORIGIN + userId + '/' + lastPart); // user/file
+  }
+
+  // Remove duplicates while preserving order
+  const seen = new Set();
+  const unique = [];
+  for (const c of candidates) {
+    if (!seen.has(c)) { seen.add(c); unique.push(c); }
+  }
+
+  // Try sequentially by creating Image object (works around CORS on img load)
+  for (const url of unique) {
+    try {
+      const ok = await testImageUrl(url);
+      console.log("Try URL:", url, "=>", ok ? "OK" : "not found");
+      if (ok) return url;
+    } catch (e) {
+      console.log("Error test url", url, e);
+    }
+  }
+
+  console.warn("No working URL found for dbValue:", dbValue, "userId:", userId, "candidates:", unique);
+  return null;
+}
+
+// Return Promise that resolves true if image loads, false on error
+function testImageUrl(url, timeout = 8000) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+    const t = setTimeout(() => {
+      if (!done) { done = true; img.src = ''; resolve(false); }
+    }, timeout);
+
+    img.onload = () => {
+      if (!done) { done = true; clearTimeout(t); resolve(true); }
+    };
+    img.onerror = () => {
+      if (!done) { done = true; clearTimeout(t); resolve(false); }
+    };
+    img.src = url;
+  });
+}
+
+function logout() {
+  localStorage.removeItem("admin_id");
+  if (db && db.auth && typeof db.auth.signOut === 'function') {
+    db.auth.signOut().catch(()=>{});
+  }
+  window.location.href = "admin-login.html";
+}
+</script>
+</body>
+</html>
