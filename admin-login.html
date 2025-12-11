@@ -4,17 +4,78 @@
     <title>Login Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #d4fc79, #96e6a1);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            background: #ffffff;
+            width: 330px;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0px 5px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        h2 {
+            color: #B71C1C;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #bbb;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 95%;
+            padding: 12px;
+            background: #C62828;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #6e2aad;
+        }
+
+        #msg {
+            margin-top: 10px;
+            color: blueviolet;
+            font-weight: bold;
+        }
+    </style>
+
 </head>
 <body>
 
-<h2>Login Admin</h2>
+<div class="login-box">
+    <h2>Login Admin <br>
+    Cek Presensi Magang</h2>
 
-<input id="email" type="email" placeholder="Email admin"><br><br>
-<input id="password" type="password" placeholder="Password"><br><br>
+    <input id="email" type="email" placeholder="Email admin">
+    <input id="password" type="password" placeholder="Password">
 
-<button onclick="loginAdmin()">Login</button>
+    <button onclick="loginAdmin()">Login</button>
 
-<p id="msg"></p>
+    <p id="msg"></p>
+</div>
 
 <script>
 async function loginAdmin() {
@@ -35,7 +96,7 @@ async function loginAdmin() {
     // Ambil user ID
     const userId = data.user.id;
 
-    // Cek role admin di tabel profiles
+    // Cek role admin
     const { data: profile, error: profileErr } = await db
         .from("profiles")
         .select("role")
@@ -52,7 +113,7 @@ async function loginAdmin() {
         return;
     }
 
-    // Simpan ke localStorage
+    // Simpan admin ID
     localStorage.setItem("admin_id", userId);
 
     // Redirect
