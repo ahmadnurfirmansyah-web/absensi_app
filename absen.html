@@ -3,27 +3,121 @@
 <head>
   <title>Absen Magang</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-top: 10px;
+      font-size: 28px;
+      color: #34495e;
+      font-weight: 600;
+    }
+
+    h3 {
+      margin-top: 25px;
+      color: #2c3e50;
+    }
+
+    .card {
+      background: white;
+      width: 90%;
+      max-width: 450px;
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.15);
+      margin-bottom: 25px;
+      text-align: center;
+      animation: fadeIn 0.4s ease;
+    }
+
+    input[type="file"] {
+      margin: 10px 0;
+      padding: 10px;
+      background: #ecf0f1;
+      border-radius: 10px;
+      border: 1px solid #bdc3c7;
+      width: 100%;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.25s;
+      background: #6c5ce7;
+      color: white;
+    }
+
+    button:hover {
+      background: #4834d4;
+      transform: scale(1.03);
+    }
+
+    #logoutBtn {
+      background: #ff7675;
+      width: auto;
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+
+    #logoutBtn:hover {
+      background: #d63031;
+    }
+
+    a {
+      color: #2d3436;
+      font-weight: bold;
+      margin-top: 15px;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
 </head>
 
 <body>
 
   <h2>Absensi Magang</h2>
-
   <button id="logoutBtn">Logout</button>
 
-  <hr>
+  <!-- CARD MASUK -->
+  <div class="card">
+    <h3>Absen Masuk</h3>
+    <input type="file" accept="image/*" capture="camera" id="fotoMasuk">
+    <button id="btnMasuk">Kirim Absen Masuk</button>
+  </div>
 
-  <h3>Absen Masuk</h3>
-  <input type="file" accept="image/*" capture="camera" id="fotoMasuk">
-  <button id="btnMasuk">Kirim Absen Masuk</button>
+  <!-- CARD PULANG -->
+  <div class="card">
+    <h3>Absen Pulang</h3>
+    <input type="file" accept="image/*" capture="camera" id="fotoPulang">
+    <button id="btnPulang">Kirim Absen Pulang</button>
+  </div>
 
-  <hr>
-
-  <h3>Absen Pulang</h3>
-  <input type="file" accept="image/*" capture="camera" id="fotoPulang">
-  <button id="btnPulang">Kirim Absen Pulang</button>
-
-  <a href="history.html">Lihat Riwayat</a>
+  <a href="history.html">Lihat Riwayat Absen</a>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="js/supabase.js"></script>
